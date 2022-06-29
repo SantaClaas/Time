@@ -44,19 +44,16 @@ type Model =
       bookings: BookingsState
       error: string option }
 
-let createBookingForHour (time: DateTimeOffset) =
+let createBookingForHour (date: DateTimeOffset) =
     // Start log at start of hour and end it at end of hour
     let timeSinceHourStart =
-        time.Hour
+        -date.Hour
         |> TimeSpan.FromHours
-        |> time.TimeOfDay.Add
+        |> date.TimeOfDay.Add
 
-    let start = time - timeSinceHourStart
-
-    let timeToNextHour =
-        TimeSpan.FromHours 1 - timeSinceHourStart
-
-    let ``end`` = time + timeToNextHour
+    let start = date - timeSinceHourStart
+    
+    let ``end`` = start + TimeSpan.FromHours 1
 
     { start = StartTime start
       ``end`` = EndTime ``end``
@@ -205,7 +202,6 @@ let tableDataStyle = "border-b border-green-800 px-3 py-4 text-gray-400"
 let bookingsTable model =
     div {
         attr.``class`` "bg-white/5 p-3 rounded-xl"
-
         cond model.bookings (fun bookings ->
             match bookings with
             | Loading -> p { "Loading bookings..." }
