@@ -52,7 +52,7 @@ let createBookingForHour (date: DateTimeOffset) =
         |> date.TimeOfDay.Add
 
     let start = date - timeSinceHourStart
-    
+
     let ``end`` = start + TimeSpan.FromHours 1
 
     { start = StartTime start
@@ -93,7 +93,20 @@ let update message model =
         printfn "Submitted booking %O" model.newBooking
 
         match completionResult with
-        | Ok booking -> model, Cmd.OfFunc.attempt add booking LogError
+        | Ok booking ->
+            // Add to file, bookings and reset new booking
+            let newBookings =
+                match model.bookings with
+                | Loaded bookings -> bookings |> Array.append [| booking |] |> Loaded
+                | _ -> model.bookings
+
+            //TODO remove booking from model when adding and saving fails or only add after save
+            //TODO set state of submit button to saving while we do IO
+            //TODO determine date of next new booking
+            { model with
+                bookings = newBookings
+                newBooking = createBookingForHour DateTimeOffset.Now },
+            Cmd.OfFunc.attempt add booking LogError
         | Error error -> { model with newBookingError = Some error }, Cmd.none
     | SetBookingsState state -> { model with bookings = state }, Cmd.none
     | LogError ``exception`` ->
@@ -192,16 +205,21 @@ let bookingDialog model dispatch =
     }
 
 [<Literal>]
-let tableHeaderStyle = "sticky top-0 py-4 px-3 \
+let tableHeaderStyle =
+    "sticky top-0 py-4 px-3 \
                         border-b border-green-800
                         bg-white/10 bg-opacity-75
                         text-start text-slate-300 font-semibold
                         backdrop-blur backdrop-filter"
+
 [<Literal>]
-let tableDataStyle = "border-b border-green-800 px-3 py-4 text-gray-400"
+let tableDataStyle =
+    "border-b border-green-800 px-3 py-4 text-gray-400"
+
 let bookingsTable model =
     div {
         attr.``class`` "bg-white/5 p-3 rounded-xl"
+
         cond model.bookings (fun bookings ->
             match bookings with
             | Loading -> p { "Loading bookings..." }
