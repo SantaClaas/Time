@@ -57,7 +57,7 @@ let page =
         body {
             div {
                 attr.id "app"
-                rootComp<Client.Main.MyApp>
+                rootComp<Client.App.MyApp>
             }
 
             boleroScript
